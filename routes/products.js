@@ -1,4 +1,6 @@
-const { Product, validate } = require("../models/product");
+const { Product, validateProduct } = require("../models/product");
+const auth = require("../middleware/auth");
+const admin = require("../middleware/admin");
 const express = require("express");
 const router = express.Router();
 
@@ -32,17 +34,18 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(400).send(`The product with id "${req.params.id}" does not exist.`);
+    if (!product)
+      return res.status(400).send(`The product with id "${req.params.id}" does not exist.`);
     return res.send(product);
   } catch (ex) {
     return res.status(500).send(`Internal Server Error: ${ex}`);
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", [auth, admin], async (req, res) => {
   try {
     // Need to validate body before continuing
-    const { error } = validate(req.body);
+    const { error } = validateProduct(req.body);
     if (error) return res.status(400).send(error);
     const product = new Product({
       name: req.body.name,
@@ -61,7 +64,7 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const { error } = validate(req.body);
+    const { error } = validateProduct(req.body);
     if (error) return res.status(400).send(error);
 
     const product = await Product.findByIdAndUpdate(
@@ -74,7 +77,8 @@ router.put("/:id", async (req, res) => {
       },
       { new: true }
     );
-    if (!product) return res.status(400).send(`The product with id "${req.params.id}" does not exist.`);
+    if (!product)
+      return res.status(400).send(`The product with id "${req.params.id}" does not exist.`);
 
     await product.save();
 
@@ -87,7 +91,8 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const product = await Product.findByIdAndRemove(req.params.id);
-    if (!product) return res.status(400).send(`The product with id "${req.params.id}" does not exist.`);
+    if (!product)
+      return res.status(400).send(`The product with id "${req.params.id}" does not exist.`);
     return res.send(product);
   } catch (ex) {
     return res.status(500).send(`Internal Server Error: ${ex}`);
